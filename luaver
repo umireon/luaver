@@ -469,17 +469,16 @@ __luaver_use_lua()
     fi
 }
 
+# __luaver_set_default_lua version
 __luaver_set_default_lua()
 {
-    local version=$1
-
-    __luaver_exec_command echo "${version}" > "${__luaver_LUA_DEFAULT_FILE}"
-    __luaver_print "Default version set for lua: ${version}"
+    'echo' "${1:?}" > "${__luaver_LUA_DEFAULT_FILE}" &&
+    __luaver_print "Default version set for lua: ${1}"
 }
 
 __luaver_unset_default_lua()
 {
-    __luaver_exec_command rm "${__luaver_LUA_DEFAULT_FILE}"
+    'rm' "${__luaver_LUA_DEFAULT_FILE}" &&
     __luaver_print "Removed default version for lua"
 }
 
@@ -564,17 +563,16 @@ __luaver_use_luajit()
     __luaver_print "Successfully switched to ${luajit_name}"
 }
 
+# __luaver_set_default_luajit version
 __luaver_set_default_luajit()
 {
-    local version=$1
-
-    __luaver_exec_command echo "${version}" > "${__luaver_LUAJIT_DEFAULT_FILE}"
-    __luaver_print "Default version set for luajit: ${version}"
+    'echo' "${1:?}" > "${__luaver_LUAJIT_DEFAULT_FILE}" &&
+    __luaver_print "Default version set for luajit: ${1}"
 }
 
 __luaver_unset_default_luajit()
 {
-    __luaver_exec_command rm "${__luaver_LUAJIT_DEFAULT_FILE}"
+    'rm' "${__luaver_LUAJIT_DEFAULT_FILE}" &&
     __luaver_print "Removed default version for LuaJIT"
 }
 
@@ -686,17 +684,16 @@ __luaver_use_luarocks()
     __luaver_print "Successfully switched to ${luarocks_name}"
 }
 
+# __luaver_set_default_luarocks version
 __luaver_set_default_luarocks()
 {
-    local version=$1
-
-    __luaver_exec_command echo "${version}" > "${__luaver_LUAROCKS_DEFAULT_FILE}"
-    __luaver_print "Default version set for luarocks: ${version}"
+    'echo' "${1:?}" > "${__luaver_LUAROCKS_DEFAULT_FILE}" &&
+    __luaver_print "Default version set for luarocks: ${1}"
 }
 
 __luaver_unset_default_luarocks()
 {
-    __luaver_exec_command rm "${__luaver_LUAROCKS_DEFAULT_FILE}"
+    'rm' "${__luaver_LUAROCKS_DEFAULT_FILE}" &&
     __luaver_print "Removed default version for luarocks"
 }
 
