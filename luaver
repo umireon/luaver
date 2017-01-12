@@ -190,18 +190,27 @@ __luaver_download()
 }
 
 # Unpacks an archive
+# Synopsis:
+#     __luaver_unpack url unpack_dir_name [basedir]
+# Exit status:
+#     0   if already exists or successfully unpacked
+#     1   if any error is occurred
 __luaver_unpack()
 {
+    set -- "${1:?}" "${2:?}" "${3-.}"
+
+    [ -e "${3}/${2}" ] && return 0
+
     __luaver_print "Unpacking ${1}"
-
-    if __luaver_exists "tar"
+    if tar -xzf "${1}" -C "${3}" # GNU tar, BSD tar or busybox
     then
-        __luaver_exec_command tar xvzf "${1}"
+        __luaver_print "Unpack successful"
+        return 0
     else
+        rm -rf "${3:?}/${2}"
         __luaver_error "'tar' must be installed"
+        return 1
     fi
-
-    __luaver_print "Unpack successful"
 }
 
 # Downloads and unpacks an archive
@@ -231,7 +240,7 @@ __luaver_download_and_unpack()
         __luaver_print "Downloading ${unpack_dir_name}"
         __luaver_download "${url}"
         __luaver_print "Extracting archive"
-        __luaver_unpack "${archive_name}"
+        __luaver_unpack "${archive_name}" "${unpack_dir_name}"
         __luaver_exec_command rm "${archive_name}"
     fi
 }
