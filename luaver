@@ -117,47 +117,6 @@ __luaver_init()
     __luaver_exec_command cd "${__luaver_present_dir}"
 }
 
-# Checking whether a particular tool exists or not
-__luaver_exists()
-{
-    local lua_path
-    local luajit_path
-    local luarocks_path
-    lua_path=$(command -v lua)
-    luajit_path=$(command -v luajit)
-    luarocks_path=$(command -v luarocks)
-
-    if [ "${1}" = "lua" ]
-    then
-        if [ "${lua_path#$__luaver_LUA_DIR}" != "${lua_path}" ]
-        then
-            return 0
-        else
-            return 1
-        fi
-    fi
-    if [ "${1}" = "luajit" ]
-    then
-        if [ "${luajit_path#$__luaver_LUAJIT_DIR}" != "${luajit_path}" ]
-        then
-            return 0
-        else
-            return 1
-        fi
-    fi
-    if [ "${1}" = "luarocks" ]
-    then
-        if [ "${luarocks_path#$__luaver_LUAROCKS_DIR}" != "${luarocks_path}" ]
-        then
-            return 0
-        else
-            return 1
-        fi
-    fi
-
-    type "${1}" > /dev/null 2>&1
-}
-
 # Downloads file from a url
 # Synopsis:
 #     __luaver_download url [path]
@@ -443,7 +402,7 @@ __luaver_use_lua()
     __luaver_print "Successfully switched to ${lua_name}"
 
     # Checking whether luarocks is in use
-    if __luaver_exists "luarocks"
+    if __luaver_get_current_luarocks_version >/dev/null 2>/dev/null
     then
         # Checking if lua version of luarocks is consistent
         local lua_version_1
