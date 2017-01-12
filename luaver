@@ -271,78 +271,70 @@ __luaver_get_platform()
 }
 
 # Returns the current lua version
+# Synopsis:
+#     __luaver_get_current_lua_version
+# Exit status:
+#     0   if lua was found
+#     1   if lua was not found
 __luaver_get_current_lua_version()
 {
-    local version
-    version=$(command -v lua)
-
-    if __luaver_exists lua
-    then
-        version=${version#$__luaver_LUA_DIR/}
-        echo "${version%/bin/lua}"
-    else
-        return 1
-    fi
+    case "$(command -v lua)" in
+        "${__luaver_LUA_DIR}"/*/bin/lua ) command -v lua | 'awk' -F/ '{ print $(NF-2) }' ;;
+        * ) return 1
+    esac
 }
 
 # Returns the current lua version (only the first two numbers)
+# Synopsis:
+#     __luaver_get_current_lua_version_short
+# Exit status:
+#     0   if lua was found
+#     1   if lua was not found
 __luaver_get_current_lua_version_short()
 {
-    local version=""
-
-    if __luaver_exists lua
-    then
-        version=$(lua -e 'print(_VERSION:sub(5))')
-    fi
-
-    echo "${version}"
+    __luaver_get_current_lua_version | 'awk' -F. -v OFS=. '{ print $1, $2 }'
 }
 
 # Returns the current luajit version
+# Synopsis:
+#     __luaver_get_current_luajit_version
+# Exit status:
+#     0   if luajit was found
+#     1   if luajit was not found
 __luaver_get_current_luajit_version()
 {
-    local version
-    version=$(command -v luajit)
-
-    if __luaver_exists "luajit"
-    then
-        version=${version#$__luaver_LUAJIT_DIR/}
-        echo "${version%/bin/luajit}"
-    else
-        return 1
-    fi
+    case "$(command -v luajit)" in
+        "${__luaver_LUAJIT_DIR}"/*/bin/luajit ) command -v luajit | 'awk' -F/ '{ print $(NF-2) }' ;;
+        * ) return 1
+    esac
 }
 
 # Returns the current luarocks version
+# Synopsis:
+#     __luaver_get_current_luarocks_version
+# Exit status:
+#     0   if luarocks was found
+#     1   if luarocks was not found
 __luaver_get_current_luarocks_version()
 {
-    local version
-    version=$(command -v luarocks)
-
-    if __luaver_exists "luarocks"
-    then
-        version=${version#$__luaver_LUAROCKS_DIR/}
-        version=${version%/bin/luarocks}
-        echo "${version%_*}"
-    else
-        return 1
-    fi
+    case "$(command -v luarocks)" in
+        "${__luaver_LUAROCKS_DIR}"/*/bin/luarocks ) command -v luarocks | 'awk' -F/ '{ print $(NF-2) }' | 'awk' -F_ '{ print $1 }';;
+        * ) return 1
+    esac
 }
 
 # Returns the short lua version being supported by present luarocks
+# Synopsis:
+#     __luaver_get_lua_version_by_current_luarocks
+# Exit status:
+#     0   if luarocks was found
+#     1   if luarocks was not found
 __luaver_get_lua_version_by_current_luarocks()
 {
-    local version
-    version=$(command -v luarocks)
-
-    if __luaver_exists "luarocks"
-    then
-        version=${version#$__luaver_LUAROCKS_DIR/}
-        version=${version%/bin/luarocks}
-        echo "${version#*_}"
-    else
-        return 1
-    fi
+    case "$(command -v luarocks)" in
+        "${__luaver_LUAROCKS_DIR}"/*/bin/luarocks ) command -v luarocks | 'awk' -F/ '{ print $(NF-2) }' | 'awk' -F_ '{ print $2 }';;
+        * ) return 1
+    esac
 }
 
 # End of Helper functions
@@ -418,7 +410,7 @@ __luaver_install_lua()
         [yY][eE][sS] | [yY] )
             __luaver_use_lua "${version}"
             ;;
-    esac 
+    esac
 }
 
 __luaver_use_lua()
