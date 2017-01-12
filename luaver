@@ -564,51 +564,52 @@ __luaver_list_luajit()
     'find' "${__luaver_LUAJIT_DIR}" -name '*.*' -prune | 'awk' -F/ '{ print $NF }'
 }
 
+# Synopsis:
+#     __luaver_install_luarocks version [baseurl] [archive_path]
+# Exit status:
+#     0   if successfully installed
+#     1   if any error is occurred
 __luaver_install_luarocks()
 {
+    set -- "${1:?}" "${2-http://luarocks.org/releases}" "${__luaver_SRC_DIR}/lua-${1}.tar.gz"
+
     # Checking whether any version of lua is installed or not
-    lua_version=$(__luaver_get_current_lua_version)
-    if [ "" = "${lua_version}" ]
+    if [ "x$(__luaver_get_current_lua_version)" = "x" ]
     then
         __luaver_error "No lua version set"
+        return 1
     fi
 
-    lua_version_short=$(__luaver_get_current_lua_version_short)
+    __luaver_print "Installing luarocks-${1}"
 
-    local version=$1
-    local luarocks_dir_name="luarocks-${version}"
-    local archive_name="${luarocks_dir_name}.tar.gz"
-    local url="http://luarocks.org/releases/${archive_name}"
+    __luaver_download "${2}/luarocks-${1}.tar.gz" "${3}" &&
+    __luaver_unpack "${3}" "luarocks-${1}" "${3%/*}" &&
+    if (
+        __luaver_print "Compiling luarocks-${1}"
+        'cd' "${3%/*}/luarocks-${1}" &&
+        ./configure \
+            --prefix="${__luaver_LUAROCKS_DIR}/${1}_$(__luaver_get_current_lua_version_short)" \
+            --with-lua="${__luaver_LUA_DIR}/$(__luaver_get_current_lua_version)" \
+            --with-lua-bin="${__luaver_LUA_DIR}/$(__luaver_get_current_lua_version)/bin" \
+            --with-lua-include="${__luaver_LUA_DIR}/$(__luaver_get_current_lua_version)/include" \
+            --with-lua-lib="${__luaver_LUA_DIR}/$(__luaver_get_current_lua_version)/lib" \
+            --versioned-rocks-dir &&
+        'make' build &&
+        'make' install
+    )
+    then
+        __luaver_print "luarocks-${1} successfully installed. Do you want to switch to this version? [Y/n]: "
+        read -r choice
+        case $choice in
+            [yY][eE][sS] | [yY] )
+                __luaver_use_luarocks "${1}"
+                ;;
+        esac
 
-    __luaver_print "Installing ${luarocks_dir_name} for lua version ${lua_version}"
-
-    __luaver_exec_command cd "${__luaver_SRC_DIR}"
-
-    __luaver_download "${url}" &&
-    __luaver_unpack "${archive_name}" "${luarocks_dir_name}"
-
-    __luaver_exec_command cd "${luarocks_dir_name}"
-
-    __luaver_print "Compiling ${luarocks_dir_name}"
-
-    __luaver_exec_command ./configure \
-                        --prefix="${__luaver_LUAROCKS_DIR}/${version}_${lua_version_short}" \
-                        --with-lua="${__luaver_LUA_DIR}/${lua_version}" \
-                        --with-lua-bin="${__luaver_LUA_DIR}/${lua_version}/bin" \
-                        --with-lua-include="${__luaver_LUA_DIR}/${lua_version}/include" \
-                        --with-lua-lib="${__luaver_LUA_DIR}/${lua_version}/lib" \
-                        --versioned-rocks-dir
-
-    __luaver_exec_command make build
-    __luaver_exec_command make install
-
-    __luaver_print "${luarocks_dir_name} successfully installed. Do you want to switch to this version? [Y/n]: "
-    read -r choice
-    case $choice in
-        [yY][eE][sS] | [yY] )
-            __luaver_use_luarocks "${version}"
-            ;;
-    esac
+        return 0
+    else
+        return 1
+    fi
 }
 
 __luaver_use_luarocks()
