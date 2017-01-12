@@ -621,44 +621,45 @@ __luaver_install_luarocks()
     fi
 }
 
+# Synopsis:
+#     __luaver_use_luarocks version
+# Exit status:
+#     0   if successfully switched
+#     1   if any error is occurred
 __luaver_use_luarocks()
 {
-    local version=$1
-    local luarocks_name="luarocks-${version}"
+    set -- "${1:?}"
 
-    lua_version=$(__luaver_get_current_lua_version_short)
-
-    if [ "${lua_version}" = "" ]
+    if [ "x$(__luaver_get_current_lua_version_short)" = "x" ]
     then
         __luaver_error "You need to first switch to a lua installation"
+        return 1
     fi
 
-    __luaver_print "Switching to ${luarocks_name} with lua version: ${lua_version}"
+    __luaver_print "Switching to luarocks-${1} with lua version: $(__luaver_get_current_lua_version_short)"
 
     # Checking if this version exists
-    __luaver_exec_command cd "${__luaver_LUAROCKS_DIR}"
-
-    if [ ! -e "${version}_${lua_version}" ]
+    if [ ! -e "${__luaver_LUAROCKS_DIR}/${1}_$(__luaver_get_current_lua_version_short)" ]
     then
-        __luaver_print "${luarocks_name} is not installed with lua version ${lua_version}. Want to install it? [Y/n]: "
+        __luaver_print "luarocks-${1} is not installed with lua version $(__luaver_get_current_lua_version_short). Want to install it? [Y/n]: "
         read -r choice
         case $choice in
             [yY][eE][sS] | [yY] )
-                __luaver_install_luarocks "${version}"
+                __luaver_install_luarocks "${1}"
                 ;;
             * )
-                __luaver_error "Unable to use ${luarocks_name}"
+                __luaver_error "Unable to use luarocks-${1}"
         esac
         return
     fi
 
     __luaver_remove_previous_paths "${__luaver_LUAROCKS_DIR}"
-    __luaver_append_path "${__luaver_LUAROCKS_DIR}/${version}_${lua_version}/bin"
+    __luaver_append_path "${__luaver_LUAROCKS_DIR}/${1}_$(__luaver_get_current_lua_version_short)/bin"
 
     # Setting up LUA_PATH and LUA_CPATH
-    eval "$(luarocks path)"
+    eval "$('luarocks' path)"
 
-    __luaver_print "Successfully switched to ${luarocks_name}"
+    __luaver_print "Successfully switched to luarocks-${1}"
 }
 
 # __luaver_set_default_luarocks version
