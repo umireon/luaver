@@ -28,7 +28,6 @@ __luaver_verbose=0
 __luaver_error()
 {
     printf "%s\n" "${1}" 1>&2
-    kill -INT $$
 }
 
 # Printing bold text - TODO
