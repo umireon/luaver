@@ -379,52 +379,48 @@ __luaver_install_lua()
     fi
 }
 
+# Synopsis:
+#     __luaver_use_lua version [luarocks_version]
+# Exit status:
+#     0   if successfully switched
+#     1   if any error is occurred
 __luaver_use_lua()
 {
-    local version=$1
-    local lua_name="lua-${version}"
+    set -- "${1:?}" "${2-$(__luaver_get_current_luarocks_version)}"
 
-    __luaver_print "Switching to ${lua_name}"
+    __luaver_print "Switching to lua-${1}"
 
     # Checking if this version exists
-    __luaver_exec_command cd "${__luaver_LUA_DIR}"
-
-    if [ ! -e "${version}" ]
+    if [ ! -e "${__luaver_LUA_DIR}/${1}" ]
     then
-        __luaver_print "${lua_name} is not installed. Do you want to install it? [Y/n]: "
+        __luaver_print "lua-${1} is not installed. Want to install it? [Y/n]: "
         read -r choice
         case $choice in
             [yY][eE][sS] | [yY] )
-                __luaver_install_lua "${version}"
+                __luaver_install_lua "${1}"
                 ;;
             * )
-                __luaver_error "Unable to use ${lua_name}"
+                __luaver_error "Unable to use lua-${1}"
         esac
         return
     fi
 
     __luaver_remove_previous_paths "${__luaver_LUA_DIR}"
-    __luaver_append_path "${__luaver_LUA_DIR}/${version}/bin"
+    __luaver_append_path "${__luaver_LUA_DIR}/${1}/bin"
 
-    __luaver_print "Successfully switched to ${lua_name}"
+    __luaver_print "Successfully switched to lua-${1}"
 
     # Checking whether luarocks is in use
     if __luaver_get_current_luarocks_version >/dev/null 2>/dev/null
     then
         # Checking if lua version of luarocks is consistent
-        local lua_version_1
-        local lua_version_2
-        lua_version_1=$(__luaver_get_current_lua_version_short)
-        lua_version_2=$(__luaver_get_lua_version_by_current_luarocks)
-        luarocks_version=$(__luaver_get_current_luarocks_version)
-
-        if [ "${lua_version_1}" != "${lua_version_2}" ]
+        if [ "x$(__luaver_get_current_lua_version_short)" != "x$(__luaver_get_lua_version_by_current_luarocks)" ]
         then
             # Removing earlier version
             __luaver_remove_previous_paths "${__luaver_LUAROCKS_DIR}"
 
             __luaver_print "Luarocks in use is inconsistent with this lua version"
-            __luaver_use_luarocks "${luarocks_version}"
+            __luaver_use_luarocks "${2}"
         fi
     fi
 }
