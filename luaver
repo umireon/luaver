@@ -159,24 +159,34 @@ __luaver_exists()
 }
 
 # Downloads file from a url
+# Synopsis:
+#     __luaver_download url [path]
+# Exit status:
+#     0   if already exists or successfully downloaded
+#     1   if any error is occurred
 __luaver_download()
 {
-    local url=$1
-    local filename=${url##*/}
+    set -- "${1:?}" "${2-${1##*/}}"
 
-    __luaver_print "Downloading from ${url}"
+    [ -e "${2}" ] && return 0
 
-    if __luaver_exists "wget"
+    __luaver_print "Downloading from ${1}"
+    if {
+        if 'curl' -V >/dev/null 2>&1
+        then
+          'curl' -fsSL "${1}" # cURL
+        else
+          'wget' -qO- "${1}" # GNU wget or busybox
+        fi
+    } >"${2}"
     then
-        __luaver_exec_command wget -O "${filename}" "${url}"
-    elif __luaver_exists "curl"
-    then
-        __luaver_exec_command curl -fLO "${url}"
+        __luaver_print "Download successful"
+        return 0
     else
+        rm -f "${2}"
         __luaver_error "'wget' or 'curl' must be installed"
+        return 1
     fi
-
-    __luaver_print "Download successful"
 }
 
 # Unpacks an archive
