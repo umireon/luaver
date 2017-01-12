@@ -461,34 +461,38 @@ __luaver_list_lua()
     'find' "${__luaver_LUA_DIR}" -name '*.*' -prune | 'awk' -F/ '{ print $NF }'
 }
 
+# Synopsis:
+#     __luaver_install_luajit version [baseurl] [archive_path]
+# Exit status:
+#     0   if successfully installed
+#     1   if any error is occurred
 __luaver_install_luajit()
 {
-    local version=$1
-    local luajit_dir_name="LuaJIT-${version}"
-    local archive_name="${luajit_dir_name}.tar.gz"
-    local url="http://luajit.org/download/${archive_name}"
+    set -- "${1:?}" "${2-http://luajit.org/download}" "${__luaver_SRC_DIR}/lua-${1}.tar.gz"
 
-    __luaver_print "Installing ${luajit_dir_name}"
+    __luaver_print "Installing LuaJIT-${1}"
 
-    __luaver_exec_command cd "${__luaver_SRC_DIR}"
+    __luaver_download "${2}/LuaJIT-${1}.tar.gz" "${3}" &&
+    __luaver_unpack "${3}" "LuaJIT-${1}" "${3%/*}" &&
+    if (
+        __luaver_print "Compiling LuaJIT-${1}"
+        'cd' "${3%/*}/LuaJIT-${1}" &&
+        'make' PREFIX="${__luaver_LUAJIT_DIR}/${1}" &&
+        'make' install PREFIX="${__luaver_LUAJIT_DIR}/${1}"
+    )
+    then
+        __luaver_print "LuaJIT-${1} successfully installed. Do you want to switch to this version? [Y/n]: "
+        read -r choice
+        case $choice in
+            [yY][eE][sS] | [yY] )
+                __luaver_use_luajit "${1}"
+                ;;
+        esac
 
-    __luaver_download "${url}" &&
-    __luaver_unpack "${archive_name}" "${luajit_dir_name}"
-
-    __luaver_exec_command cd "${luajit_dir_name}"
-
-    __luaver_print "Compiling ${luajit_dir_name}"
-
-    __luaver_exec_command make PREFIX="${__luaver_LUAJIT_DIR}/${version}"
-    __luaver_exec_command make install PREFIX="${__luaver_LUAJIT_DIR}/${version}"
-
-    __luaver_print "${luajit_dir_name} successfully installed. Do you want to switch to this version? [Y/n]: "
-    read -r choice
-    case $choice in
-        [yY][eE][sS] | [yY] )
-            __luaver_use_luajit "${version}"
-            ;;
-    esac
+        return 0
+    else
+        return 1
+    fi
 }
 
 __luaver_use_luajit()
