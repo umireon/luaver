@@ -18,8 +18,6 @@ __luaver_LUAJIT_DEFAULT_FILE="${__luaver_LUAVER_DIR}/DEFAULT_LUAJIT"       # Lua
 __luaver_LUAROCKS_DIR="${__luaver_LUAVER_DIR}/luarocks"                    # Luarocks source is built
 __luaver_LUAROCKS_DEFAULT_FILE="${__luaver_LUAVER_DIR}/DEFAULT_LUAROCKS"   # Luarocks default version
 
-__luaver_present_dir=""
-
 # Verbose level
 __luaver_verbose=0
 
@@ -30,7 +28,6 @@ __luaver_verbose=0
 __luaver_error()
 {
     printf "%s\n" "${1}" 1>&2
-    __luaver_exec_command cd "${__luaver_present_dir}"
     kill -INT $$
 }
 
@@ -64,8 +61,6 @@ __luaver_exec_command()
 # Perform some initialization
 __luaver_init()
 {
-    __luaver_present_dir=$(pwd)
-
     if [ ! -e "${__luaver_LUAVER_DIR}" ]
     then
         __luaver_exec_command mkdir "${__luaver_LUAVER_DIR}"
@@ -113,8 +108,6 @@ __luaver_init()
     fi
 
     __luaver_verbose=1
-
-    __luaver_exec_command cd "${__luaver_present_dir}"
 }
 
 # Downloads file from a url
@@ -204,14 +197,13 @@ __luaver_uninstall()
 
     __luaver_print "Uninstalling ${1}"
 
-    __luaver_exec_command cd "${2}"
     if [ ! -e "${2}/${3}" ]
     then
         __luaver_error "${1} is not installed"
         return 1
     fi
 
-    'rm' -r "${3}" && __luaver_print "Successfully uninstalled ${1}"
+    'rm' -r "${2:?}/${3}" && __luaver_print "Successfully uninstalled ${1}"
 }
 
 # Returns the platform
@@ -729,8 +721,6 @@ __luaver_init
 
 luaver()
 {
-    __luaver_present_dir=$(pwd)
-
     local command="${1}"
     shift
 
@@ -762,6 +752,4 @@ luaver()
         "version" )                 __luaver_version;;
         * )                         __luaver_usage;;
     esac
-
-    __luaver_exec_command cd "${__luaver_present_dir}"
 }
