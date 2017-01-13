@@ -51,17 +51,17 @@ __luaver_init()
 {
     if [ -f "${__luaver_LUA_DEFAULT_FILE}" ]
     then
-        __luaver_use_lua "$(cat "${__luaver_LUA_DEFAULT_FILE}")"
+        luaver use "$(cat "${__luaver_LUA_DEFAULT_FILE}")"
     fi
 
     if [ -f "${__luaver_LUAJIT_DEFAULT_FILE}" ]
     then
-        __luaver_use_luajit "$(cat "${__luaver_LUAJIT_DEFAULT_FILE}")"
+        luaver use-luajit "$(cat "${__luaver_LUAJIT_DEFAULT_FILE}")"
     fi
 
     if [ -f "${__luaver_LUAROCKS_DEFAULT_FILE}" ]
     then
-        __luaver_use_luarocks "$(cat "${__luaver_LUAROCKS_DEFAULT_FILE}")"
+        luaver use-luarocks "$(cat "${__luaver_LUAROCKS_DEFAULT_FILE}")"
     fi
 
     __luaver_verbose=1
@@ -267,125 +267,6 @@ __luaver_usage()
     __luaver_print_formatted "   luaver uninstall 5.3.0                   # Uninstalls lua version 5.3.0"
 }
 
-# Synopsis:
-#     __luaver_use_lua version [luarocks_version]
-# Exit status:
-#     0   if successfully switched
-#     1   if any error is occurred
-__luaver_use_lua()
-{
-    set -- "${1:?}" "${2-$(__luaver_get_current_luarocks_version)}"
-
-    __luaver_print "Switching to lua-${1}"
-
-    # Checking if this version exists
-    if [ ! -e "${__luaver_LUA_DIR}/${1}" ]
-    then
-        __luaver_print "lua-${1} is not installed. Want to install it? [Y/n]: "
-        read -r choice
-        case $choice in
-            [yY][eE][sS] | [yY] )
-                luaver install "${1}"
-                ;;
-            * )
-                __luaver_error "Unable to use lua-${1}"
-        esac
-        return
-    fi
-
-    __luaver_remove_previous_paths "${__luaver_LUA_DIR}"
-    __luaver_append_path "${__luaver_LUA_DIR}/${1}/bin"
-
-    __luaver_print "Successfully switched to lua-${1}"
-
-    # Checking whether luarocks is in use
-    if __luaver_get_current_luarocks_version >/dev/null 2>/dev/null
-    then
-        # Checking if lua version of luarocks is consistent
-        if [ "x$(__luaver_get_current_lua_version_short)" != "x$(__luaver_get_lua_version_by_current_luarocks)" ]
-        then
-            # Removing earlier version
-            __luaver_remove_previous_paths "${__luaver_LUAROCKS_DIR}"
-
-            __luaver_print "Luarocks in use is inconsistent with this lua version"
-            __luaver_use_luarocks "${2}"
-        fi
-    fi
-}
-
-# Synopsis:
-#     __luaver_use_luajit version
-# Exit status:
-#     0   if successfully switched
-#     1   if any error is occurred
-__luaver_use_luajit()
-{
-    set -- "${1:?}"
-
-    __luaver_print "Switching to LuaJIT-${1}"
-
-    # Checking if this version exists
-    if [ ! -e "${__luaver_LUAJIT_DIR}/${1}" ]
-    then
-        __luaver_print "LuaJIT-${1} is not installed. Want to install it? [Y/n]: "
-        read -r choice
-        case $choice in
-            [yY][eE][sS] | [yY] )
-                luaver install "${1}"
-                ;;
-            * )
-                __luaver_error "Unable to use LuaJIT-${1}"
-        esac
-        return
-    fi
-
-    __luaver_remove_previous_paths "${__luaver_LUAJIT_DIR}"
-    __luaver_append_path "${__luaver_LUAJIT_DIR}/${1}/bin"
-
-    __luaver_print "Successfully switched to LuaJIT-${1}"
-}
-
-# Synopsis:
-#     __luaver_use_luarocks version
-# Exit status:
-#     0   if successfully switched
-#     1   if any error is occurred
-__luaver_use_luarocks()
-{
-    set -- "${1:?}"
-
-    if [ "x$(__luaver_get_current_lua_version_short)" = "x" ]
-    then
-        __luaver_error "You need to first switch to a lua installation"
-        return 1
-    fi
-
-    __luaver_print "Switching to luarocks-${1} with lua version: $(__luaver_get_current_lua_version_short)"
-
-    # Checking if this version exists
-    if [ ! -e "${__luaver_LUAROCKS_DIR}/${1}_$(__luaver_get_current_lua_version_short)" ]
-    then
-        __luaver_print "luarocks-${1} is not installed with lua version $(__luaver_get_current_lua_version_short). Want to install it? [Y/n]: "
-        read -r choice
-        case $choice in
-            [yY][eE][sS] | [yY] )
-                luaver install-luarocks "${1}"
-                ;;
-            * )
-                __luaver_error "Unable to use luarocks-${1}"
-        esac
-        return
-    fi
-
-    __luaver_remove_previous_paths "${__luaver_LUAROCKS_DIR}"
-    __luaver_append_path "${__luaver_LUAROCKS_DIR}/${1}_$(__luaver_get_current_lua_version_short)/bin"
-
-    # Setting up LUA_PATH and LUA_CPATH
-    eval "$('luarocks' path)"
-
-    __luaver_print "Successfully switched to luarocks-${1}"
-}
-
 __luaver_current()
 {
     lua_version=$(__luaver_get_current_lua_version)
@@ -414,12 +295,15 @@ __luaver_version()
     __luaver_print_formatted "Developed by Dhaval Kapil <me@dhavalkapil.com>\n"
 }
 
-# Init environment
-__luaver_init
-
 luaver()
 {
     case $1 in
+        use )
+            luaver_use lua "${2}"
+            return ;;
+        use-luajit | use-luarocks )
+            luaver_use "${1##*-}" "${2}"
+            return ;;
         install )
             luaver_install lua "${2}" "http://www.lua.org/ftp/lua-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/lua-${2}" "${__luaver_LUAVER_DIR}/lua/${2}"
             return ;;
@@ -460,13 +344,6 @@ luaver()
 
     case $command in
         "help" )                    __luaver_usage;;
-
-        "use" )                     __luaver_use_lua "${@}";;
-
-        "use-luajit" )              __luaver_use_luajit "${@}";;
-
-        "use-luarocks" )            __luaver_use_luarocks "${@}";;
-
         "current" )                 __luaver_current;;
         "version" )                 __luaver_version;;
         * )                         __luaver_usage;;
@@ -581,7 +458,11 @@ luaver_install()
         read -r choice
         case $choice in
             [yY][eE][sS] | [yY] )
-                __luaver_use_"${1}" "${2}"
+                case ${1} in
+                    lua )      luaver use "${2}" ;;
+                    luajit )   luaver use-luajit "${2}" ;;
+                    luarocks ) luaver use-luarocks "${2}" ;;
+                esac
                 ;;
         esac
 
@@ -590,3 +471,86 @@ luaver_install()
         return 1
     fi
 }
+
+# Synopsis:
+#     luaver_use name version [luarocks_version]
+# Exit status:
+#     0   if successfully switched
+#     1   if any error is occurred
+luaver_use()
+{
+    set -- "${1:?}" "${2:?}" "${3-$(__luaver_get_current_luarocks_version)}"
+
+    if [ "x${1}" = "xluarocks" ]
+    then
+        if [ -z "$(__luaver_get_current_lua_version_short)" ]
+        then
+            __luaver_error "You need to first switch to a lua installation"
+            return 1
+        fi
+
+        __luaver_print "Switching to ${1}-${2} with lua version: $(__luaver_get_current_lua_version_short)"
+
+        # Checking if this version exists
+        if [ ! -e "${__luaver_LUAVER_DIR}/${1}/${2}_$(__luaver_get_current_lua_version_short)" ]
+        then
+            __luaver_print "${1}-${2} is not installed. Want to install it? [Y/n]: "
+            read -r choice
+            case $choice in
+                [yY][eE][sS] | [yY] )
+                    luaver install-luarocks "${2}" ;;
+                * )
+                    __luaver_error "Unable to use ${1}-${2}"
+            esac
+            return
+        fi
+
+        __luaver_remove_previous_paths "${__luaver_LUAVER_DIR}/${1}"
+        __luaver_append_path "${__luaver_LUAVER_DIR}/${1}/${2}_$(__luaver_get_current_lua_version_short)/bin"
+
+        # Setting up LUA_PATH and LUA_CPATH
+        eval "$('luarocks' path)"
+    else
+        __luaver_print "Switching to ${1}-${2}"
+
+        # Checking if this version exists
+        if [ ! -e "${__luaver_LUAVER_DIR}/${1}/${2}" ]
+        then
+            __luaver_print "${1}-${2} is not installed. Want to install it? [Y/n]: "
+            read -r choice
+            case $choice in
+                [yY][eE][sS] | [yY] )
+                    case ${1} in
+                        lua )    luaver install "${2}" ;;
+                        luajit ) luaver install-luajit "${2}" ;;
+                    esac
+                    ;;
+                * )
+                    __luaver_error "Unable to use ${1}-${2}"
+            esac
+            return
+        fi
+
+        __luaver_remove_previous_paths "${__luaver_LUAVER_DIR}/${1}"
+        __luaver_append_path "${__luaver_LUAVER_DIR}/${1}/${2}/bin"
+    fi
+
+    __luaver_print "Successfully switched to ${1}-${2}"
+
+    # Checking whether luarocks is in use
+    if [ "x${1}" = "xlua" ] && __luaver_get_current_luarocks_version >/dev/null 2>/dev/null
+    then
+        # Checking if lua version of luarocks is consistent
+        if [ "x$(__luaver_get_current_lua_version_short)" != "x$(__luaver_get_lua_version_by_current_luarocks)" ]
+        then
+            # Removing earlier version
+            __luaver_remove_previous_paths "${__luaver_LUAVER_DIR}/luarocks"
+
+            __luaver_print "Luarocks in use is inconsistent with this lua version"
+            luaver use-luarocks "${3}"
+        fi
+    fi
+}
+
+# Init environment
+__luaver_init
