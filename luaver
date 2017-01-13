@@ -47,16 +47,6 @@ __luaver_print_formatted()
     printf "%s\n" "${1}"
 }
 
-# A wrapper function to execute commands on the terminal and exit on error
-# Called whenever the execution should stop after any error occurs
-__luaver_exec_command()
-{
-    if ! "${@}"
-    then
-        __luaver_error "Unable to execute the following command:\n${1}\nExiting"
-    fi
-}
-
 # Perform some initialization
 __luaver_init()
 {
