@@ -233,10 +233,10 @@ __luaver_get_lua_version_by_current_luarocks()
 # End of Helper functions
 ###############################################################################
 
-__luaver_usage()
+luaver_usage()
 {
     __luaver_print_formatted ""
-    __luaver_version
+    luaver_version
     __luaver_print_formatted "Usage:\n"
     __luaver_print_formatted "   luaver help                              Displays this message"
     __luaver_print_formatted "   luaver install <version>                 Installs lua-<version>"
@@ -267,7 +267,7 @@ __luaver_usage()
     __luaver_print_formatted "   luaver uninstall 5.3.0                   # Uninstalls lua version 5.3.0"
 }
 
-__luaver_current()
+luaver_current()
 {
     lua_version=$(__luaver_get_current_lua_version)
     luajit_version=$(__luaver_get_current_luajit_version)
@@ -289,7 +289,7 @@ __luaver_current()
     fi
 }
 
-__luaver_version()
+luaver_version()
 {
     __luaver_print_formatted "Lua Version Manager ${__luaver_VERSION}\n"
     __luaver_print_formatted "Developed by Dhaval Kapil <me@dhavalkapil.com>\n"
@@ -298,55 +298,22 @@ __luaver_version()
 luaver()
 {
     case $1 in
-        use )
-            luaver_use lua "${2}"
-            return ;;
-        use-luajit | use-luarocks )
-            luaver_use "${1##*-}" "${2}"
-            return ;;
-        install )
-            luaver_install lua "${2}" "http://www.lua.org/ftp/lua-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/lua-${2}" "${__luaver_LUAVER_DIR}/lua/${2}"
-            return ;;
-        install-luajit )
-            luaver_install luajit "${2}" "http://luajit.org/download/LuaJIT-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/LuaJIT-${2}" "${__luaver_LUAVER_DIR}/luajit/${2}"
-            return ;;
-        install-luarocks )
-            luaver_install luarocks "${2}" "http://luarocks.org/releases/luarocks-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/luarocks-${2}" "${__luaver_LUAVER_DIR}/luarocks/${2}"
-            return ;;
-        uninstall )
-            luaver_uninstall lua "${2}" "${__luaver_LUAVER_DIR}/lua"
-            return ;;
-        uninstall-luajit | uninstall-luarocks )
-            luaver_uninstall "${1##*-}" "${2}" "${__luaver_LUAVER_DIR}/${1##*-}"
-            return ;;
-        list )
-            luaver_list lua
-            return ;;
-        list-luajit | list-luarocks )
-            luaver_list "${1##*-}"
-            return ;;
-        set-default )
-            luaver_set_default lua "${2}"
-            return ;;
-        set-default-luajit | set-default-luarocks )
-            luaver_set_default "${1##*-}" "${2}"
-            return ;;
-        unset-default )
-            luaver_set_default lua
-            return ;;
-        unset-default-luajit | unset-default-luarocks )
-            luaver_set_default "${1##*-}"
-            return ;;
-    esac
-
-    local command="${1}"
-    shift
-
-    case $command in
-        "help" )                    __luaver_usage;;
-        "current" )                 __luaver_current;;
-        "version" )                 __luaver_version;;
-        * )                         __luaver_usage;;
+        use )                                           luaver_use lua "${2}" ;;
+        use-luajit | use-luarocks )                     luaver_use "${1##*-}" "${2}" ;;
+        install )                                       luaver_install lua "${2}" "http://www.lua.org/ftp/lua-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/lua-${2}" "${__luaver_LUAVER_DIR}/lua/${2}" ;;
+        install-luajit )                                luaver_install luajit "${2}" "http://luajit.org/download/LuaJIT-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/LuaJIT-${2}" "${__luaver_LUAVER_DIR}/luajit/${2}" ;;
+        install-luarocks )                              luaver_install luarocks "${2}" "http://luarocks.org/releases/luarocks-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/luarocks-${2}" "${__luaver_LUAVER_DIR}/luarocks/${2}" ;;
+        uninstall )                                     luaver_uninstall lua "${2}" "${__luaver_LUAVER_DIR}/lua" ;;
+        uninstall-luajit | uninstall-luarocks )         luaver_uninstall "${1##*-}" "${2}" "${__luaver_LUAVER_DIR}/${1##*-}" ;;
+        list )                                          luaver_list lua ;;
+        list-luajit | list-luarocks )                   luaver_list "${1##*-}" ;;
+        set-default )                                   luaver_set_default lua "${2}" ;;
+        set-default-luajit | set-default-luarocks )     luaver_set_default "${1##*-}" "${2}" ;;
+        unset-default )                                 luaver_set_default lua ;;
+        unset-default-luajit | unset-default-luarocks ) luaver_set_default "${1##*-}" ;;
+        current )                                       luaver_current ;;
+        version )                                       luaver_version ;;
+        * )                                             luaver_usage
     esac
 }
 
