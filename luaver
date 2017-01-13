@@ -144,27 +144,6 @@ __luaver_append_path()
     export PATH="${1}:${PATH}"
 }
 
-# Uninstalls lua/luarocks
-# Synopsis:
-#     __luaver_uninstall package_name package_path package_dir
-# Exit status:
-#     0   if successfully uninstalled
-#     1   if any error is occurred
-__luaver_uninstall()
-{
-    set -- "${1:?}" "${2:?}" "${3:?}"
-
-    __luaver_print "Uninstalling ${1}"
-
-    if [ ! -e "${2}/${3}" ]
-    then
-        __luaver_error "${1} is not installed"
-        return 1
-    fi
-
-    'rm' -r "${2:?}/${3}" && __luaver_print "Successfully uninstalled ${1}"
-}
-
 # Returns the platform
 # Synopsis:
 #     __luaver_get_platform
@@ -378,26 +357,6 @@ __luaver_use_lua()
 }
 
 # Synopsis:
-#     __luaver_uninstall_lua version
-# Exit status:
-#     0   if successfully uninstalled
-#     1   if any error is occurred
-__luaver_uninstall_lua()
-{
-    set -- "${1:?}"
-
-    if __luaver_uninstall "lua-${1}" "${__luaver_LUA_DIR}" "${1}"
-    then
-        if [ "x${1}" = "x$(__luaver_get_current_lua_version)" ]
-        then
-            __luaver_remove_previous_paths "${__luaver_LUA_DIR}"
-        fi
-    else
-        return 1
-    fi
-}
-
-# Synopsis:
 #     __luaver_install_luajit version [baseurl] [archive_path]
 # Exit status:
 #     0   if successfully installed
@@ -462,26 +421,6 @@ __luaver_use_luajit()
     __luaver_append_path "${__luaver_LUAJIT_DIR}/${1}/bin"
 
     __luaver_print "Successfully switched to LuaJIT-${1}"
-}
-
-# Synopsis:
-#     __luaver_uninstall_luajit version
-# Exit status:
-#     0   if successfully uninstalled
-#     1   if any error is occurred
-__luaver_uninstall_luajit()
-{
-    set -- "${1:?}"
-
-    if __luaver_uninstall "LuaJIT-${1}" "${__luaver_LUAJIT_DIR}" "${1}"
-    then
-        if [ "x${1}" = "x$(__luaver_get_current_luajit_version)" ]
-        then
-            __luaver_remove_previous_paths "${__luaver_LUAJIT_DIR}"
-        fi
-    else
-        return 1
-    fi
 }
 
 # Synopsis:
@@ -574,25 +513,6 @@ __luaver_use_luarocks()
     __luaver_print "Successfully switched to luarocks-${1}"
 }
 
-# Synopsis:
-#     __luaver_uninstall_luarocks version [lua_version]
-# Exit status:
-#     0   if successfully uninstalled
-#     1   if any error is occurred
-__luaver_uninstall_luarocks()
-{
-    set -- "${1:?}" "${2-$(__luaver_get_current_lua_version_short)}"
-
-    __luaver_print "luarocks-${1} will be uninstalled for lua version ${2}"
-    if __luaver_uninstall "luarocks-${1}" "${__luaver_LUAROCKS_DIR}" "${1}_${2}"
-    then
-        if [ "x${1}" = "x$(__luaver_get_current_luarocks_version)" ]
-        then
-            __luaver_remove_previous_paths "${__luaver_LUAROCKS_DIR}"
-        fi
-    fi
-}
-
 __luaver_current()
 {
     lua_version=$(__luaver_get_current_lua_version)
@@ -627,6 +547,12 @@ __luaver_init
 luaver()
 {
     case $1 in
+        uninstall )
+            luaver_uninstall lua "${2}" "${__luaver_LUAVER_DIR}/lua"
+            return ;;
+        uninstall-luajit | uninstall-luarocks )
+            luaver_uninstall "${1##*-}" "${2}" "${__luaver_LUAVER_DIR}/${1##*-}"
+            return ;;
         list )
             luaver_list lua
             return ;;
@@ -655,15 +581,12 @@ luaver()
 
         "install" )                 __luaver_install_lua "${@}";;
         "use" )                     __luaver_use_lua "${@}";;
-        "uninstall" )               __luaver_uninstall_lua "${@}";;
 
         "install-luajit")           __luaver_install_luajit "${@}";;
         "use-luajit" )              __luaver_use_luajit "${@}";;
-        "uninstall-luajit" )        __luaver_uninstall_luajit "${@}";;
 
         "install-luarocks")         __luaver_install_luarocks "${@}";;
         "use-luarocks" )            __luaver_use_luarocks "${@}";;
-        "uninstall-luarocks" )      __luaver_uninstall_luarocks "${@}";;
 
         "current" )                 __luaver_current;;
         "version" )                 __luaver_version;;
@@ -689,4 +612,30 @@ luaver_list()
 {
     __luaver_print "Installed versions: (currently $(__luaver_get_current_"${1:?}"_version || echo none))"
     'find' "${__luaver_LUAVER_DIR}/${1}" -name '*.*' -prune | 'awk' -F/ '{ print $NF }'
+}
+
+# Uninstalls lua/luarocks
+# Synopsis:
+#     luaver_uninstall name version basedir
+# Exit status:
+#     0   if successfully uninstalled
+#     1   if any error is occurred
+luaver_uninstall()
+{
+    set -- "${1:?}" "${2:?}" "${3:?}"
+
+    if [ "x${1}" = "xluarocks" ]
+    then
+        __luaver_print "luarocks-${2} will be uninstalled for lua version $(__luaver_get_current_luarocks_version)"
+    else
+        __luaver_print "Uninstalling ${1}-${2}"
+    fi
+
+    if [ ! -e "${3}/${2}" ]
+    then
+        __luaver_error "${1}-${2} is not installed"
+        return 1
+    fi
+
+    'rm' -r "${3:?}/${2}" && __luaver_print "Successfully uninstalled ${1}-${2}"
 }
