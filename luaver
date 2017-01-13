@@ -10,12 +10,6 @@ __luaver_VERSION="1.0.0"
 # Directories and files to be used
 
 __luaver_LUAVER_DIR="${HOME}/.luaver"                                      # The luaver directory
-__luaver_LUA_DIR="${__luaver_LUAVER_DIR}/lua"                              # Lua source is built
-__luaver_LUA_DEFAULT_FILE="${__luaver_LUAVER_DIR}/DEFAULT_LUA"             # Lua default version
-__luaver_LUAJIT_DIR="${__luaver_LUAVER_DIR}/luajit"                        # Luajit source is built
-__luaver_LUAJIT_DEFAULT_FILE="${__luaver_LUAVER_DIR}/DEFAULT_LUAJIT"       # Luajit default version
-__luaver_LUAROCKS_DIR="${__luaver_LUAVER_DIR}/luarocks"                    # Luarocks source is built
-__luaver_LUAROCKS_DEFAULT_FILE="${__luaver_LUAVER_DIR}/DEFAULT_LUAROCKS"   # Luarocks default version
 
 # Verbose level
 __luaver_verbose=0
@@ -49,19 +43,19 @@ __luaver_print_formatted()
 # Perform some initialization
 __luaver_init()
 {
-    if [ -f "${__luaver_LUA_DEFAULT_FILE}" ]
+    if [ -f "${__luaver_LUAVER_DIR}/DEFAULT_LUA" ]
     then
-        luaver use "$(cat "${__luaver_LUA_DEFAULT_FILE}")"
+        luaver use "$(cat "${__luaver_LUAVER_DIR}/DEFAULT_LUA")"
     fi
 
-    if [ -f "${__luaver_LUAJIT_DEFAULT_FILE}" ]
+    if [ -f "${__luaver_LUAVER_DIR}/DEFAULT_LUAJIT" ]
     then
-        luaver use-luajit "$(cat "${__luaver_LUAJIT_DEFAULT_FILE}")"
+        luaver use-luajit "$(cat "${__luaver_LUAVER_DIR}/DEFAULT_LUAJIT")"
     fi
 
-    if [ -f "${__luaver_LUAROCKS_DEFAULT_FILE}" ]
+    if [ -f "${__luaver_LUAVER_DIR}/DEFAULT_LUAROCKS" ]
     then
-        luaver use-luarocks "$(cat "${__luaver_LUAROCKS_DEFAULT_FILE}")"
+        luaver use-luarocks "$(cat "${__luaver_LUAVER_DIR}/DEFAULT_LUAROCKS")"
     fi
 
     __luaver_verbose=1
@@ -172,7 +166,7 @@ __luaver_get_platform()
 __luaver_get_current_lua_version()
 {
     case "$(command -v lua)" in
-        "${__luaver_LUA_DIR}"/*/bin/lua ) command -v lua | 'awk' -F/ '{ print $(NF-2) }' ;;
+        ${__luaver_LUAVER_DIR}/lua/*/bin/lua ) command -v lua | 'awk' -F/ '{ print $(NF-2) }' ;;
         * ) return 1
     esac
 }
@@ -197,7 +191,7 @@ __luaver_get_current_lua_version_short()
 __luaver_get_current_luajit_version()
 {
     case "$(command -v luajit)" in
-        "${__luaver_LUAJIT_DIR}"/*/bin/luajit ) command -v luajit | 'awk' -F/ '{ print $(NF-2) }' ;;
+        ${__luaver_LUAVER_DIR}/luajit/*/bin/luajit ) command -v luajit | 'awk' -F/ '{ print $(NF-2) }' ;;
         * ) return 1
     esac
 }
@@ -211,7 +205,7 @@ __luaver_get_current_luajit_version()
 __luaver_get_current_luarocks_version()
 {
     case "$(command -v luarocks)" in
-        "${__luaver_LUAROCKS_DIR}"/*/bin/luarocks ) command -v luarocks | 'awk' -F/ '{ print $(NF-2) }' | 'awk' -F_ '{ print $1 }';;
+        ${__luaver_LUAVER_DIR}/luarocks/*/bin/luarocks ) command -v luarocks | 'awk' -F/ '{ print $(NF-2) }' | 'awk' -F_ '{ print $1 }';;
         * ) return 1
     esac
 }
@@ -225,7 +219,7 @@ __luaver_get_current_luarocks_version()
 __luaver_get_lua_version_by_current_luarocks()
 {
     case "$(command -v luarocks)" in
-        "${__luaver_LUAROCKS_DIR}"/*/bin/luarocks ) command -v luarocks | 'awk' -F/ '{ print $(NF-2) }' | 'awk' -F_ '{ print $2 }';;
+        ${__luaver_LUAVER_DIR}/luarocks/*/bin/luarocks ) command -v luarocks | 'awk' -F/ '{ print $(NF-2) }' | 'awk' -F_ '{ print $2 }';;
         * ) return 1
     esac
 }
