@@ -126,15 +126,16 @@ __luaver_unpack()
 # Removes existing strings starting with a prefix in PATH
 __luaver_remove_previous_paths()
 {
-    local prefix=$1
-
-    local new_path
-    new_path=$(echo "${PATH}" | sed \
-        -e "s#${prefix}/[^/]*/bin[^:]*:##g" \
-        -e "s#:${prefix}/[^/]*/bin[^:]*##g" \
-        -e "s#${prefix}/[^/]*/bin[^:]*##g")
-
-    export PATH=$new_path
+    export PATH
+    PATH=$('awk' -v OFS=: -v prefix="${1}/" 'BEGIN {
+        split(ARGV[1], a, ":")
+        for (i = 1; i <= length(a); i++) {
+            if (substr(a[i], 0, length(prefix)) != prefix || a[i] !~ "[^/]*/bin$") {
+                $(NF+1) = a[i]
+            }
+        }
+        print $0
+    }' "${PATH}")
 }
 
 # Append to PATH
