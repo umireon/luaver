@@ -65,11 +65,6 @@ __luaver_init()
         __luaver_exec_command mkdir "${__luaver_LUAVER_DIR}"
     fi
 
-    if [ ! -e "${__luaver_SRC_DIR}" ]
-    then
-        __luaver_exec_command mkdir "${__luaver_SRC_DIR}"
-    fi
-
     if [ ! -e "${__luaver_LUA_DIR}" ]
     then
         __luaver_exec_command mkdir "${__luaver_LUA_DIR}"
@@ -348,6 +343,7 @@ __luaver_install_lua()
         __luaver_print "Unable to detect platform. Using default 'posix'"
     fi
 
+    'mkdir' -p "${3%/*}" &&
     __luaver_download "${2}/lua-${1}.tar.gz" "${3}" &&
     __luaver_unpack "${3}" "lua-${1}" "${3%/*}" &&
     if (
@@ -466,6 +462,7 @@ __luaver_install_luajit()
 
     __luaver_print "Installing LuaJIT-${1}"
 
+    'mkdir' -p "${3%/*}" &&
     __luaver_download "${2}/LuaJIT-${1}.tar.gz" "${3}" &&
     __luaver_unpack "${3}" "LuaJIT-${1}" "${3%/*}" &&
     if (
@@ -578,6 +575,7 @@ __luaver_install_luarocks()
 
     __luaver_print "Installing luarocks-${1}"
 
+    'mkdir' -p "${3%/*}" &&
     __luaver_download "${2}/luarocks-${1}.tar.gz" "${3}" &&
     __luaver_unpack "${3}" "luarocks-${1}" "${3%/*}" &&
     if (
