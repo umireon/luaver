@@ -10,7 +10,6 @@ __luaver_VERSION="1.0.0"
 # Directories and files to be used
 
 __luaver_LUAVER_DIR="${HOME}/.luaver"                                      # The luaver directory
-__luaver_SRC_DIR="${__luaver_LUAVER_DIR}/src"                              # Source code is downloaded
 __luaver_LUA_DIR="${__luaver_LUAVER_DIR}/lua"                              # Lua source is built
 __luaver_LUA_DEFAULT_FILE="${__luaver_LUAVER_DIR}/DEFAULT_LUA"             # Lua default version
 __luaver_LUAJIT_DIR="${__luaver_LUAVER_DIR}/luajit"                        # Luajit source is built
@@ -101,23 +100,23 @@ __luaver_download()
 
 # Unpacks an archive
 # Synopsis:
-#     __luaver_unpack url unpack_dir_name [basedir]
+#     __luaver_unpack archive_path source_path
 # Exit status:
 #     0   if already exists or successfully unpacked
 #     1   if any error is occurred
 __luaver_unpack()
 {
-    set -- "${1:?}" "${2:?}" "${3-.}"
+    set -- "${1:?}" "${2:?}"
 
-    [ -e "${3}/${2}" ] && return 0
+    [ -e "${2}" ] && return 0
 
-    __luaver_print "Unpacking ${1}"
-    if tar -xzf "${1}" -C "${3}" # GNU tar, BSD tar or busybox
+    __luaver_print "Unpacking ${1##*/}"
+    if tar -xzf "${1}" -C "${1%/*}" # GNU tar, BSD tar or busybox
     then
         __luaver_print "Unpack successful"
         return 0
     else
-        rm -rf "${3:?}/${2}"
+        rm -rf "${2}"
         __luaver_error "'tar' must be installed"
         return 1
     fi
@@ -269,48 +268,6 @@ __luaver_usage()
 }
 
 # Synopsis:
-#     __luaver_install_lua version [baseurl] [archive_path]
-# Exit status:
-#     0   if successfully installed
-#     1   if any error is occurred
-__luaver_install_lua()
-{
-    set -- "${1:?}" "${2-http://www.lua.org/ftp}" "${__luaver_SRC_DIR}/lua-${1}.tar.gz"
-
-    __luaver_print "Installing lua-${1}"
-
-    __luaver_print "Detecting platform"
-    if __luaver_get_platform >/dev/null 2>&1
-    then
-        __luaver_print "Platform detected: $(__luaver_get_platform)"
-    else
-        __luaver_print "Unable to detect platform. Using default 'posix'"
-    fi
-
-    'mkdir' -p "${3%/*}" "${__luaver_LUA_DIR}" &&
-    __luaver_download "${2}/lua-${1}.tar.gz" "${3}" &&
-    __luaver_unpack "${3}" "lua-${1}" "${3%/*}" &&
-    if (
-        __luaver_print "Compiling lua-${1}"
-        'cd' "${3%/*}/lua-${1}" &&
-        'make' "$(__luaver_get_platform || echo "posix")" install INSTALL_TOP="${__luaver_LUA_DIR}/${1}"
-    )
-    then
-        __luaver_print "lua-${1} successfully installed. Do you want to switch to this version? [Y/n]: "
-        read -r choice
-        case $choice in
-            [yY][eE][sS] | [yY] )
-                __luaver_use_lua "${1}"
-                ;;
-        esac
-
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Synopsis:
 #     __luaver_use_lua version [luarocks_version]
 # Exit status:
 #     0   if successfully switched
@@ -328,7 +285,7 @@ __luaver_use_lua()
         read -r choice
         case $choice in
             [yY][eE][sS] | [yY] )
-                __luaver_install_lua "${1}"
+                luaver install "${1}"
                 ;;
             * )
                 __luaver_error "Unable to use lua-${1}"
@@ -357,41 +314,6 @@ __luaver_use_lua()
 }
 
 # Synopsis:
-#     __luaver_install_luajit version [baseurl] [archive_path]
-# Exit status:
-#     0   if successfully installed
-#     1   if any error is occurred
-__luaver_install_luajit()
-{
-    set -- "${1:?}" "${2-http://luajit.org/download}" "${__luaver_SRC_DIR}/lua-${1}.tar.gz"
-
-    __luaver_print "Installing LuaJIT-${1}"
-
-    'mkdir' -p "${3%/*}" "${__luaver_LUAJIT_DIR}" &&
-    __luaver_download "${2}/LuaJIT-${1}.tar.gz" "${3}" &&
-    __luaver_unpack "${3}" "LuaJIT-${1}" "${3%/*}" &&
-    if (
-        __luaver_print "Compiling LuaJIT-${1}"
-        'cd' "${3%/*}/LuaJIT-${1}" &&
-        'make' PREFIX="${__luaver_LUAJIT_DIR}/${1}" &&
-        'make' install PREFIX="${__luaver_LUAJIT_DIR}/${1}"
-    )
-    then
-        __luaver_print "LuaJIT-${1} successfully installed. Do you want to switch to this version? [Y/n]: "
-        read -r choice
-        case $choice in
-            [yY][eE][sS] | [yY] )
-                __luaver_use_luajit "${1}"
-                ;;
-        esac
-
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Synopsis:
 #     __luaver_use_luajit version
 # Exit status:
 #     0   if successfully switched
@@ -409,7 +331,7 @@ __luaver_use_luajit()
         read -r choice
         case $choice in
             [yY][eE][sS] | [yY] )
-                __luaver_install_lua "${1}"
+                luaver install "${1}"
                 ;;
             * )
                 __luaver_error "Unable to use LuaJIT-${1}"
@@ -421,55 +343,6 @@ __luaver_use_luajit()
     __luaver_append_path "${__luaver_LUAJIT_DIR}/${1}/bin"
 
     __luaver_print "Successfully switched to LuaJIT-${1}"
-}
-
-# Synopsis:
-#     __luaver_install_luarocks version [baseurl] [archive_path]
-# Exit status:
-#     0   if successfully installed
-#     1   if any error is occurred
-__luaver_install_luarocks()
-{
-    set -- "${1:?}" "${2-http://luarocks.org/releases}" "${__luaver_SRC_DIR}/lua-${1}.tar.gz"
-
-    # Checking whether any version of lua is installed or not
-    if [ "x$(__luaver_get_current_lua_version)" = "x" ]
-    then
-        __luaver_error "No lua version set"
-        return 1
-    fi
-
-    __luaver_print "Installing luarocks-${1}"
-
-    'mkdir' -p "${3%/*}" "${__luaver_LUA_DIR}" "${__luaver_LUAROCKS_DIR}" &&
-    __luaver_download "${2}/luarocks-${1}.tar.gz" "${3}" &&
-    __luaver_unpack "${3}" "luarocks-${1}" "${3%/*}" &&
-    if (
-        __luaver_print "Compiling luarocks-${1}"
-        'cd' "${3%/*}/luarocks-${1}" &&
-        ./configure \
-            --prefix="${__luaver_LUAROCKS_DIR}/${1}_$(__luaver_get_current_lua_version_short)" \
-            --with-lua="${__luaver_LUA_DIR}/$(__luaver_get_current_lua_version)" \
-            --with-lua-bin="${__luaver_LUA_DIR}/$(__luaver_get_current_lua_version)/bin" \
-            --with-lua-include="${__luaver_LUA_DIR}/$(__luaver_get_current_lua_version)/include" \
-            --with-lua-lib="${__luaver_LUA_DIR}/$(__luaver_get_current_lua_version)/lib" \
-            --versioned-rocks-dir &&
-        'make' build &&
-        'make' install
-    )
-    then
-        __luaver_print "luarocks-${1} successfully installed. Do you want to switch to this version? [Y/n]: "
-        read -r choice
-        case $choice in
-            [yY][eE][sS] | [yY] )
-                __luaver_use_luarocks "${1}"
-                ;;
-        esac
-
-        return 0
-    else
-        return 1
-    fi
 }
 
 # Synopsis:
@@ -496,7 +369,7 @@ __luaver_use_luarocks()
         read -r choice
         case $choice in
             [yY][eE][sS] | [yY] )
-                __luaver_install_luarocks "${1}"
+                luaver install-luarocks "${1}"
                 ;;
             * )
                 __luaver_error "Unable to use luarocks-${1}"
@@ -547,6 +420,15 @@ __luaver_init
 luaver()
 {
     case $1 in
+        install )
+            luaver_install lua "${2}" "http://www.lua.org/ftp/lua-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/lua-${2}" "${__luaver_LUAVER_DIR}/lua/${2}"
+            return ;;
+        install-luajit )
+            luaver_install luajit "${2}" "http://luajit.org/download/LuaJIT-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/LuaJIT-${2}" "${__luaver_LUAVER_DIR}/luajit/${2}"
+            return ;;
+        install-luarocks )
+            luaver_install luarocks "${2}" "http://luarocks.org/releases/luarocks-${2}.tar.gz" "${__luaver_LUAVER_DIR}/src/luarocks-${2}" "${__luaver_LUAVER_DIR}/luarocks/${2}"
+            return ;;
         uninstall )
             luaver_uninstall lua "${2}" "${__luaver_LUAVER_DIR}/lua"
             return ;;
@@ -579,13 +461,10 @@ luaver()
     case $command in
         "help" )                    __luaver_usage;;
 
-        "install" )                 __luaver_install_lua "${@}";;
         "use" )                     __luaver_use_lua "${@}";;
 
-        "install-luajit")           __luaver_install_luajit "${@}";;
         "use-luajit" )              __luaver_use_luajit "${@}";;
 
-        "install-luarocks")         __luaver_install_luarocks "${@}";;
         "use-luarocks" )            __luaver_use_luarocks "${@}";;
 
         "current" )                 __luaver_current;;
@@ -638,4 +517,76 @@ luaver_uninstall()
     fi
 
     'rm' -r "${3:?}/${2}" && __luaver_print "Successfully uninstalled ${1}-${2}"
+}
+
+# Synopsis:
+#     luaver_install name version url source_path package_path
+# Exit status:
+#     0   if successfully installed
+#     1   if any error is occurred
+luaver_install()
+{
+    set -- "${1:?}" "${2:?}" "${3:?}" "${4:?}" "${5:?}"
+
+    # Checking whether any version of lua is installed or not
+    if [ "x${1}" = "xluarocks" ] && [ -z "$(__luaver_get_current_lua_version)" ]
+    then
+        __luaver_error "No lua version set"
+        return 1
+    fi
+
+    __luaver_print "Installing ${1}-${2}"
+
+    'mkdir' -p "${4%/*}" "${__luaver_LUAVER_DIR}/${1}" &&
+    __luaver_download "${3}" "${4%/*}/${3##*/}" &&
+    __luaver_unpack "${4%/*}/${3##*/}" "${5}" &&
+    if (
+        case "${1}" in
+            lua )
+                __luaver_print "Detecting platform"
+                if __luaver_get_platform >/dev/null 2>&1
+                then
+                    __luaver_print "Platform detected: $(__luaver_get_platform)"
+                else
+                    __luaver_print "Unable to detect platform. Using default 'posix'"
+                fi
+
+                __luaver_print "Compiling ${1}-${2}"
+                'cd' "${4%/*}/lua-${2}" &&
+                'make' "$(__luaver_get_platform || echo "posix")" install INSTALL_TOP="${__luaver_LUAVER_DIR}/${1}/${2}"
+                ;;
+            luajit )
+                __luaver_print "Compiling ${1}-${2}"
+                'cd' "${4%/*}/LuaJIT-${2}" &&
+                'make' PREFIX="${__luaver_LUAVER_DIR}/${1}/${2}" &&
+                'make' install PREFIX="${__luaver_LUAVER_DIR}/${1}/${2}"
+                ;;
+            luarocks )
+                __luaver_print "Compiling ${1}-${2}"
+                'cd' "${4%/*}/luarocks-${2}" &&
+                ./configure \
+                    --prefix="${__luaver_LUAVER_DIR}/${1}/${2}_$(__luaver_get_current_lua_version_short)" \
+                    --with-lua="${__luaver_LUAVER_DIR}/lua/$(__luaver_get_current_lua_version)" \
+                    --with-lua-bin="${__luaver_LUAVER_DIR}/lua/$(__luaver_get_current_lua_version)/bin" \
+                    --with-lua-include="${__luaver_LUAVER_DIR}/lua/$(__luaver_get_current_lua_version)/include" \
+                    --with-lua-lib="${__luaver_LUAVER_DIR}/lua/$(__luaver_get_current_lua_version)/lib" \
+                    --versioned-rocks-dir &&
+                'make' build &&
+                'make' install
+                ;;
+        esac
+    )
+    then
+        __luaver_print "${1}-${2} successfully installed. Do you want to switch to this version? [Y/n]: "
+        read -r choice
+        case $choice in
+            [yY][eE][sS] | [yY] )
+                __luaver_use_"${1}" "${2}"
+                ;;
+        esac
+
+        return 0
+    else
+        return 1
+    fi
 }
