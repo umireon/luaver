@@ -397,12 +397,6 @@ __luaver_uninstall_lua()
     fi
 }
 
-__luaver_list_lua()
-{
-    __luaver_print "Installed versions: (currently $(__luaver_get_current_lua_version || echo none))"
-    'find' "${__luaver_LUA_DIR}" -name '*.*' -prune | 'awk' -F/ '{ print $NF }'
-}
-
 # Synopsis:
 #     __luaver_install_luajit version [baseurl] [archive_path]
 # Exit status:
@@ -488,12 +482,6 @@ __luaver_uninstall_luajit()
     else
         return 1
     fi
-}
-
-__luaver_list_luajit()
-{
-    __luaver_print "Installed versions: (currently $(__luaver_get_current_luajit_version || echo none))"
-    'find' "${__luaver_LUAJIT_DIR}" -name '*.*' -prune | 'awk' -F/ '{ print $NF }'
 }
 
 # Synopsis:
@@ -605,12 +593,6 @@ __luaver_uninstall_luarocks()
     fi
 }
 
-__luaver_list_luarocks()
-{
-    __luaver_print "Installed versions: (currently $(__luaver_get_current_luarocks_version || echo none) in lua $(__luaver_get_lua_version_by_current_luarocks || echo none))"
-    'find' "${__luaver_LUAROCKS_DIR}" -name '*.*' -prune | 'awk' -F/ '{ print $NF }' | 'awk' -F_ '{ print $1 "\tlua:" $2}'
-}
-
 __luaver_current()
 {
     lua_version=$(__luaver_get_current_lua_version)
@@ -645,6 +627,12 @@ __luaver_init
 luaver()
 {
     case $1 in
+        list )
+            luaver_list lua
+            return ;;
+        list-luajit | list-luarocks )
+            luaver_list "${1##*-}"
+            return ;;
         set-default )
             luaver_set_default lua "${2}"
             return ;;
@@ -668,17 +656,14 @@ luaver()
         "install" )                 __luaver_install_lua "${@}";;
         "use" )                     __luaver_use_lua "${@}";;
         "uninstall" )               __luaver_uninstall_lua "${@}";;
-        "list" )                    __luaver_list_lua;;
 
         "install-luajit")           __luaver_install_luajit "${@}";;
         "use-luajit" )              __luaver_use_luajit "${@}";;
         "uninstall-luajit" )        __luaver_uninstall_luajit "${@}";;
-        "list-luajit" )             __luaver_list_luajit;;
 
         "install-luarocks")         __luaver_install_luarocks "${@}";;
         "use-luarocks" )            __luaver_use_luarocks "${@}";;
         "uninstall-luarocks" )      __luaver_uninstall_luarocks "${@}";;
-        "list-luarocks" )           __luaver_list_luarocks;;
 
         "current" )                 __luaver_current;;
         "version" )                 __luaver_version;;
@@ -697,4 +682,11 @@ luaver_set_default()
         'rm' "${__luaver_LUAVER_DIR}/DEFAULT_$('echo' "${1}" | tr '[:lower:]' '[:upper:]')" &&
         __luaver_print "Removed default version for ${1}"
     fi
+}
+
+# luaver_list name
+luaver_list()
+{
+    __luaver_print "Installed versions: (currently $(__luaver_get_current_"${1:?}"_version || echo none))"
+    'find' "${__luaver_LUAVER_DIR}/${1}" -name '*.*' -prune | 'awk' -F/ '{ print $NF }'
 }
