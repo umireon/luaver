@@ -62,23 +62,17 @@ __luaver_init()
 {
     if [ -f "${__luaver_LUA_DEFAULT_FILE}" ]
     then
-        local lua_version
-        lua_version=$(cat "${__luaver_LUA_DEFAULT_FILE}")
-        __luaver_use_lua "${lua_version}"
+        __luaver_use_lua "$(cat "${__luaver_LUA_DEFAULT_FILE}")"
     fi
 
     if [ -f "${__luaver_LUAJIT_DEFAULT_FILE}" ]
     then
-        local luajit_version
-        luajit_version=$(cat "${__luaver_LUAJIT_DEFAULT_FILE}")
-        __luaver_use_luajit "${luajit_version}"
+        __luaver_use_luajit "$(cat "${__luaver_LUAJIT_DEFAULT_FILE}")"
     fi
 
     if [ -f "${__luaver_LUAROCKS_DEFAULT_FILE}" ]
     then
-        local luarocks_version
-        luarocks_version=$(cat "${__luaver_LUAROCKS_DEFAULT_FILE}")
-        __luaver_use_luarocks "${luarocks_version}"
+        __luaver_use_luarocks "$(cat "${__luaver_LUAROCKS_DEFAULT_FILE}")"
     fi
 
     __luaver_verbose=1
