@@ -60,11 +60,6 @@ __luaver_exec_command()
 # Perform some initialization
 __luaver_init()
 {
-    if [ ! -e "${__luaver_LUAVER_DIR}" ]
-    then
-        __luaver_exec_command mkdir "${__luaver_LUAVER_DIR}"
-    fi
-
     if [ -f "${__luaver_LUA_DEFAULT_FILE}" ]
     then
         local lua_version
